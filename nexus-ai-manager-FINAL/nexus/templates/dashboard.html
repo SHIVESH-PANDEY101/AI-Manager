@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}
+  <span id="greeting">Good morning</span>, {{ user.name.split()[0] }}! 👋
+{% endblock %}
+{% block topbar_actions %}
+  <button class="tb-btn" onclick="refreshBriefing()">🔄 Refresh AI</button>
+{% endblock %}
+{% block content %}
+<!-- AI BRIEFING -->
+<div id="briefingCard" style="background:linear-gradient(135deg,rgba(59,130,246,0.08),rgba(99,102,241,0.05));border:1px solid rgba(59,130,246,0.2);border-radius:16px;padding:22px 24px;margin-bottom:20px;position:relative;overflow:hidden;">
+  <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent),var(--a2),transparent);"></div>
+  <div class="flex items-center gap-3 mb-3">
+    <span style="background:linear-gradient(135deg,var(--accent),var(--a2));border-radius:8px;padding:4px 12px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;box-shadow:0 0 20px var(--glow);">✨ AI Briefing</span>
+    <span style="font-size:12px;color:var(--text2);margin-left:auto;" id="briefingTime"></span>
+  </div>
+  <div id="briefingText" style="font-size:14px;line-height:1.75;min-height:44px;color:var(--text);">Loading your personalized briefing...</div>
+  <div class="flex gap-2 flex-wrap mt-3">
+    <a href="/chat" class="btn btn-ghost btn-sm">💬 Ask AI</a>
+    <a href="/tasks" class="btn btn-ghost btn-sm">📋 Tasks</a>
+    <a href="/calendar" class="btn btn-ghost btn-sm">📅 Calendar</a>
+    <a href="/goals" class="btn btn-ghost btn-sm">🎯 Goals</a>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="grid4 mb-4">
+  <div class="stat-card sc-blue">
+    <div class="stat-icon si-blue">📅</div>
+    <div class="stat-value">{{ events|length }}</div>
+    <div class="stat-label">Events Today</div>
+    <div class="stat-change sc-up">Today</div>
+  </div>
+  <div class="stat-card sc-purple">
+    <div class="stat-icon si-purple">✅</div>
+    <div class="stat-value">{{ tasks|length }}</div>
+    <div class="stat-label">Active Tasks</div>
+    <div class="stat-change sc-up">{{ task_done }} done</div>
+  </div>
+  <div class="stat-card sc-green">
+    <div class="stat-icon si-green">🔥</div>
+    <div class="stat-value">{{ habits|length }}</div>
+    <div class="stat-label">Habits Tracked</div>
+    <div class="stat-change sc-up">Active</div>
+  </div>
+  <div class="stat-card sc-amber">
+    <div class="stat-icon si-amber">🎯</div>
+    <div class="stat-value">{{ goals|length }}</div>
+    <div class="stat-label">Goals In Progress</div>
+    <div class="stat-change sc-up">Active</div>
+  </div>
+</div>
+
+<!-- SCHEDULE + CHART -->
+<div class="grid2 mb-4">
+  <div class="card">
+    <div class="card-title">📅 Today's Schedule</div>
+    {% if events %}
+      {% set cat_colors = {'Work':'#3b82f6','Personal':'#6366f1','Health':'#10b981','Finance':'#f59e0b','Social':'#ec4899'} %}
+      <div style="display:flex;flex-direction:column;gap:2px;">
+        {% for e in events %}
+        <div style="display:flex;align-items:flex-start;gap:12px;padding:10px;border-radius:10px;transition:background .15s;cursor:pointer;" onmouseover="this.style.background='var(--surf2)'" onmouseout="this.style.background=''">
+          <span style="font-size:12px;color:var(--text2);min-width:40px;padding-top:2px;font-weight:600;">{{ e.time or '--:--' }}</span>
+          <div style="width:8px;height:8px;border-radius:50%;background:{{ cat_colors.get(e.category,'#3b82f6') }};flex-shrink:0;margin-top:4px;"></div>
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:500;">{{ e.title }}</div>
+            <div style="font-size:11px;color:var(--text2);">{{ e.duration }}h {% if e.location %}· {{ e.location }}{% endif %}</div>
+          </div>
+          <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;background:{{ cat_colors.get(e.category,'#3b82f6') }}22;color:{{ cat_colors.get(e.category,'#3b82f6') }}">{{ e.category }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state"><div class="empty-icon">📅</div><p>No events today.<br><a href="/calendar" style="color:var(--accent)">Add one →</a></p></div>
+    {% endif %}
+  </div>
+  <div class="card">
+    <div class="card-title">📊 Weekly Overview</div>
+    <canvas id="weekChart" height="200"></canvas>
+  </div>
+</div>
+
+<!-- HABITS + GOALS -->
+<div class="grid2">
+  <div class="card">
+    <div class="flex items-center justify-between mb-3">
+      <div class="card-title" style="margin:0">🔥 Habit Streaks</div>
+      <a href="/habits" class="btn btn-ghost btn-sm">View All →</a>
+    </div>
+    {% for h in habits %}
+    <div style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:10px;margin-bottom:4px;transition:background .15s;" onmouseover="this.style.background='var(--surf2)'" onmouseout="this.style.background=''">
+      <span style="font-size:20px;">{{ h.icon }}</span>
+      <div style="flex:1;"><div style="font-size:13px;font-weight:600;">{{ h.name }}</div><div style="font-size:11px;color:var(--text2);">🔥 {{ h.streak }} day streak</div></div>
+      <span class="badge badge-blue">{{ h.frequency }}</span>
+    </div>
+    {% else %}
+    <div class="empty-state"><div class="empty-icon">🔥</div><p>No habits yet. <a href="/habits" style="color:var(--accent)">Create one →</a></p></div>
+    {% endfor %}
+  </div>
+  <div class="card">
+    <div class="flex items-center justify-between mb-3">
+      <div class="card-title" style="margin:0">🎯 Top Goals</div>
+      <a href="/goals" class="btn btn-ghost btn-sm">View All →</a>
+    </div>
+    {% for g in goals %}
+    <div style="margin-bottom:14px;">
+      <div class="flex items-center justify-between mb-2">
+        <span style="font-size:13px;font-weight:500;">{{ g.icon }} {{ g.title }}</span>
+        <span style="font-size:12px;font-weight:700;color:{{ g.color }}">{{ g.progress }}%</span>
+      </div>
+      <div class="progress-wrap"><div class="progress-fill" style="width:{{ g.progress }}%;background:{{ g.color }};"></div></div>
+    </div>
+    {% else %}
+    <div class="empty-state"><div class="empty-icon">🎯</div><p>No goals yet. <a href="/goals" style="color:var(--accent)">Set one →</a></p></div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+// GREETING
+const h=new Date().getHours();
+document.getElementById('greeting').textContent=h<12?'Good morning':h<17?'Good afternoon':'Good evening';
+document.getElementById('briefingTime').textContent=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})+' · '+new Date().toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
+
+// AI BRIEFING
+async function refreshBriefing(){
+  document.getElementById('briefingText').innerHTML='<span style="color:var(--text2)">Generating your briefing with Gemini AI...</span>';
+  try{
+    const r=await fetch('/api/ai/briefing',{method:'POST'});
+    const d=await r.json();
+    document.getElementById('briefingText').textContent=d.briefing||'Have a great day!';
+  }catch(e){
+    document.getElementById('briefingText').textContent='Good day! You have things to accomplish. Let\'s make it count! 🚀';
+  }
+}
+refreshBriefing();
+
+// WEEK CHART
+new Chart(document.getElementById('weekChart').getContext('2d'),{
+  type:'bar',
+  data:{
+    labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+    datasets:[
+      {label:'Tasks Done',data:[3,5,4,7,6,2,3],backgroundColor:'rgba(59,130,246,.5)',borderColor:'#3b82f6',borderWidth:2,borderRadius:6},
+      {label:'Events',data:[2,3,2,4,3,1,2],backgroundColor:'rgba(99,102,241,.4)',borderColor:'#6366f1',borderWidth:2,borderRadius:6}
+    ]
+  },
+  options:{responsive:true,plugins:{legend:{labels:{color:'#7889a8',font:{family:'DM Sans'}}}},scales:{x:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#7889a8'}},y:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#7889a8'}}}}
+});
+</script>
+{% endblock %}

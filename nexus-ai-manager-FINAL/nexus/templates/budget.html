@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Budget{% endblock %}
+{% block page_title %}💰 Budget Tracker{% endblock %}
+{% block topbar_actions %}
+<button class="tb-btn" onclick="getAdvice()">🤖 AI Advice</button>
+<button class="tb-btn primary" onclick="openModal('txModal')">+ Transaction</button>
+{% endblock %}
+{% block content %}
+<div class="grid3 mb-4">
+  <div class="stat-card sc-green"><div class="stat-icon si-green">💚</div><div class="stat-value text-green" id="totalIncome">$0</div><div class="stat-label">Total Income</div></div>
+  <div class="stat-card sc-red"><div class="stat-icon si-red">💸</div><div class="stat-value text-red" id="totalExp">$0</div><div class="stat-label">Total Expenses</div></div>
+  <div class="stat-card sc-blue"><div class="stat-icon si-blue">💎</div><div class="stat-value" id="totalBal">$0</div><div class="stat-label">Balance</div></div>
+</div>
+<div class="grid2 mb-4">
+  <div class="card"><div class="card-title">Monthly Overview</div><canvas id="budgetChart" height="220"></canvas></div>
+  <div class="card"><div class="card-title">Spending by Category</div><canvas id="catChart" height="220"></canvas></div>
+</div>
+<div class="card">
+  <div class="card-title">Recent Transactions</div>
+  <div id="txList"></div>
+</div>
+<div class="modal-overlay" id="txModal">
+  <div class="modal"><div class="modal-title">Add Transaction</div><div class="modal-close" onclick="closeModal('txModal')">✕</div>
+    <div class="form-group"><label class="form-label">Type</label><select class="form-select" id="txType"><option value="income">💚 Income</option><option value="expense">💸 Expense</option></select></div>
+    <div class="form-group"><label class="form-label">Description</label><input class="form-input" id="txName" placeholder="e.g. Salary, Groceries..."></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Amount ($)</label><input class="form-input" id="txAmt" type="number" min="0" placeholder="0.00"></div>
+      <div class="form-group"><label class="form-label">Category</label><select class="form-select" id="txCat"><option>Food</option><option>Transport</option><option>Shopping</option><option>Health</option><option>Entertainment</option><option>Salary</option><option>Investment</option><option>Other</option></select></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('txModal')">Cancel</button><button class="btn btn-primary" onclick="addTx()">Save</button></div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+let txs = {{ transactions|safe }};
+const catIcons={Food:'🍔',Transport:'🚗',Shopping:'🛒',Health:'💊',Entertainment:'🎮',Salary:'💼',Investment:'📈',Other:'📦'};
+function renderAll(){
+  const inc=txs.filter(t=>t.type==='income').reduce((s,t)=>s+Number(t.amount),0);
+  const exp=txs.filter(t=>t.type==='expense').reduce((s,t)=>s+Number(t.amount),0);
+  const bal=inc-exp;
+  document.getElementById('totalIncome').textContent='$'+inc.toLocaleString();
+  document.getElementById('totalExp').textContent='$'+exp.toLocaleString();
+  const be=document.getElementById('totalBal');be.textContent='$'+Math.abs(bal).toLocaleString();be.className='stat-value '+(bal>=0?'text-green':'text-red');
+  document.getElementById('txList').innerHTML=txs.length?[...txs].reverse().map(t=>`
+    <div style="display:flex;align-items:center;gap:14px;padding:12px 14px;border-bottom:1px solid var(--border);transition:background .15s;" onmouseover="this.style.background='var(--surf2)'" onmouseout="this.style.background=''">
+      <span style="font-size:20px;">${catIcons[t.category]||'💳'}</span>
+      <div style="flex:1;"><div style="font-size:13px;font-weight:500;color:var(--text);">${t.name}</div><div style="font-size:11px;color:var(--text2);">${t.category} · ${t.date||t.created_at?.slice(0,10)}</div></div>
+      <div style="font-size:15px;font-weight:700;font-family:'Syne',sans-serif;color:${t.type==='income'?'var(--a3)':'var(--a5)'};">${t.type==='income'?'+':'-'}$${Number(t.amount).toLocaleString()}</div>
+      <button onclick="deleteTx('${t.id}')" style="background:none;border:none;cursor:pointer;color:var(--text3);">✕</button>
+    </div>`).join(''):
+    '<div class="empty-state"><div class="empty-icon">💰</div><p>No transactions yet</p></div>';
+}
+async function addTx(){
+  const name=document.getElementById('txName').value.trim();
+  const amount=parseFloat(document.getElementById('txAmt').value);
+  if(!name||!amount){toast('Fill all fields','error');return;}
+  const r=await api('POST','/api/transactions',{name,type:document.getElementById('txType').value,amount,category:document.getElementById('txCat').value,date:new Date().toISOString().split('T')[0]});
+  txs.push({id:r.id,name,type:document.getElementById('txType').value,amount,category:document.getElementById('txCat').value,date:new Date().toISOString().split('T')[0]});
+  closeModal('txModal');renderAll();initCharts();toast('Transaction saved! 💰','success');
+  document.getElementById('txName').value='';document.getElementById('txAmt').value='';
+}
+async function deleteTx(id){await api('DELETE',`/api/transactions/${id}`);txs=txs.filter(t=>t.id!==id);renderAll();initCharts();}
+function initCharts(){
+  const inc=txs.filter(t=>t.type==='income').reduce((s,t)=>s+Number(t.amount),0);
+  const exp=txs.filter(t=>t.type==='expense').reduce((s,t)=>s+Number(t.amount),0);
+  if(window._bc)window._bc.destroy();
+  window._bc=new Chart(document.getElementById('budgetChart').getContext('2d'),{type:'bar',data:{labels:['Income','Expenses','Balance'],datasets:[{data:[inc,exp,Math.max(0,inc-exp)],backgroundColor:['rgba(16,185,129,.6)','rgba(239,68,68,.6)','rgba(59,130,246,.6)'],borderColor:['#10b981','#ef4444','#3b82f6'],borderWidth:2,borderRadius:8}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#7889a8'}},y:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#7889a8'}}}}});
+  const cats={};txs.filter(t=>t.type==='expense').forEach(t=>{cats[t.category]=(cats[t.category]||0)+Number(t.amount);});
+  if(window._cc)window._cc.destroy();
+  window._cc=new Chart(document.getElementById('catChart').getContext('2d'),{type:'doughnut',data:{labels:Object.keys(cats),datasets:[{data:Object.values(cats),backgroundColor:['#3b82f6','#6366f1','#10b981','#f59e0b','#ef4444','#ec4899','#8b5cf6'],borderWidth:0}]},options:{responsive:true,plugins:{legend:{position:'right',labels:{color:'#7889a8',font:{family:'DM Sans'},boxWidth:12}}}}});
+}
+async function getAdvice(){
+  const inc=txs.filter(t=>t.type==='income').reduce((s,t)=>s+Number(t.amount),0);
+  const exp=txs.filter(t=>t.type==='expense').reduce((s,t)=>s+Number(t.amount),0);
+  toast('🤖 Analyzing budget...','info');
+  const r=await api('POST','/api/ai/chat',{message:`My income is $${inc} and expenses $${exp}. Give 3 specific money-saving tips. Be brief.`});
+  if(r.reply)toast(r.reply.substring(0,150)+'...','info');
+}
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+async function api(m,u,b){const r=await fetch(u,{method:m,headers:{'Content-Type':'application/json'},body:b?JSON.stringify(b):undefined});return r.json();}
+function toast(msg,type){const icons={success:'✅',error:'❌',info:'💡'};const c=document.getElementById('toast-container');const t=document.createElement('div');t.className=`toast ${type}`;t.innerHTML=`<span style="font-size:16px">${icons[type]||'💡'}</span><span>${msg}</span>`;c.appendChild(t);setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),300);},3500);}
+renderAll();initCharts();
+</script>
+{% endblock %}

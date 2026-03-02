@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>NEXUS — Sign In</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#04080f;--surface:#0b1120;--surf2:#0f1629;--border:rgba(100,160,255,0.1);--border2:rgba(100,160,255,0.2);--accent:#3b82f6;--a2:#6366f1;--a3:#10b981;--text:#e8f0ff;--text2:#7889a8;--text3:#3d4f6e;--glow:rgba(59,130,246,0.25);}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;overflow:hidden;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 900px 700px at 80% 50%,rgba(59,130,246,0.07) 0%,transparent 60%),radial-gradient(ellipse 600px 500px at 20% 80%,rgba(99,102,241,0.06) 0%,transparent 60%);pointer-events:none;}
+body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(59,130,246,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(59,130,246,0.025) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;}
+
+/* SPLIT LAYOUT */
+.auth-left{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;position:relative;z-index:1;}
+.auth-right{width:50%;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 50px;position:relative;overflow:hidden;}
+.auth-right::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent),var(--a2),transparent);}
+
+/* LEFT SIDE — HERO */
+.brand{display:flex;align-items:center;gap:14px;margin-bottom:60px;align-self:flex-start;}
+.brand-logo{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--a2));display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 0 30px var(--glow);}
+.brand-name{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;letter-spacing:-.5px;}
+.brand-name span{color:var(--accent);}
+.hero-text{margin-bottom:48px;}
+.hero-text h1{font-family:'Syne',sans-serif;font-size:clamp(32px,4vw,52px);font-weight:800;line-height:1.1;letter-spacing:-1.5px;margin-bottom:20px;}
+.hero-text h1 .grad{background:linear-gradient(135deg,var(--accent),var(--a2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hero-text p{font-size:16px;color:var(--text2);line-height:1.7;max-width:420px;}
+.features-list{display:flex;flex-direction:column;gap:14px;}
+.feature-item{display:flex;align-items:center;gap:14px;padding:14px 18px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:12px;backdrop-filter:blur(10px);}
+.feature-item:hover{border-color:var(--border2);}
+.feat-icon{font-size:22px;width:40px;height:40px;background:rgba(59,130,246,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.feat-text h3{font-size:13px;font-weight:600;margin-bottom:2px;}
+.feat-text p{font-size:12px;color:var(--text2);}
+
+/* RIGHT SIDE — FORM */
+.auth-form-wrap{width:100%;max-width:380px;}
+.auth-tabs{display:flex;background:var(--surf2);border-radius:12px;padding:4px;margin-bottom:28px;gap:4px;}
+.auth-tab{flex:1;text-align:center;padding:9px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;color:var(--text2);}
+.auth-tab.active{background:var(--surface);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.3);}
+.auth-form{display:none;}
+.auth-form.active{display:block;}
+.auth-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin-bottom:6px;letter-spacing:-.3px;}
+.auth-subtitle{font-size:13px;color:var(--text2);margin-bottom:28px;line-height:1.5;}
+.input-wrap{position:relative;margin-bottom:14px;}
+.input-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:16px;pointer-events:none;}
+.auth-input{width:100%;background:var(--surf2);border:1px solid var(--border2);border-radius:11px;padding:12px 14px 12px 42px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color .2s,box-shadow .2s;}
+.auth-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,130,246,0.1);}
+.auth-input::placeholder{color:var(--text3);}
+.eye-btn{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text2);font-size:15px;padding:4px;}
+.plan-selector{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+.plan-opt{background:var(--surf2);border:1px solid var(--border2);border-radius:10px;padding:12px 8px;text-align:center;cursor:pointer;transition:all .15s;}
+.plan-opt:hover{border-color:var(--accent);}
+.plan-opt.selected{border-color:var(--accent);background:rgba(59,130,246,0.08);}
+.plan-opt .plan-name{font-size:13px;font-weight:700;margin-bottom:2px;}
+.plan-opt .plan-price{font-size:11px;color:var(--text2);}
+.plan-opt .plan-price span{color:var(--accent);font-weight:700;}
+.submit-btn{width:100%;background:linear-gradient(135deg,var(--accent),var(--a2));border:none;border-radius:11px;padding:13px;color:#fff;font-size:15px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;transition:opacity .2s,transform .1s;box-shadow:0 4px 20px var(--glow);margin-top:4px;}
+.submit-btn:hover{opacity:.9;}
+.submit-btn:active{transform:scale(.99);}
+.auth-divider{text-align:center;font-size:12px;color:var(--text3);margin:16px 0;position:relative;}
+.auth-divider::before,.auth-divider::after{content:'';position:absolute;top:50%;width:40%;height:1px;background:var(--border);}
+.auth-divider::before{left:0;}.auth-divider::after{right:0;}
+.demo-box{background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.2);border-radius:11px;padding:14px 16px;margin-top:16px;font-size:12px;line-height:1.7;}
+.demo-box strong{color:var(--a3);}
+.demo-box code{background:var(--surf2);padding:1px 6px;border-radius:4px;font-size:11px;}
+.error-msg{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:10px 14px;font-size:13px;color:#ef4444;margin-bottom:14px;display:none;}
+.error-msg.show{display:block;}
+.pricing-link{text-align:center;margin-top:16px;font-size:12px;color:var(--text2);}
+.pricing-link a{color:var(--accent);text-decoration:none;}
+
+/* FLOATING ORBS */
+.orb{position:absolute;border-radius:50%;filter:blur(60px);pointer-events:none;animation:float 6s ease-in-out infinite;}
+.orb1{width:300px;height:300px;background:rgba(59,130,246,0.08);top:10%;right:10%;animation-delay:0s;}
+.orb2{width:200px;height:200px;background:rgba(99,102,241,0.06);bottom:20%;right:30%;animation-delay:2s;}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-20px);}}
+
+@media(max-width:768px){.auth-left{display:none;}.auth-right{width:100%;border:none;padding:40px 24px;}}
+</style>
+</head>
+<body>
+<div class="auth-left">
+  <div class="brand">
+    <div class="brand-logo">🧠</div>
+    <div class="brand-name"><span>NEX</span>US</div>
+  </div>
+  <div class="hero-text">
+    <h1>Your entire life,<br><span class="grad">managed by AI</span></h1>
+    <p>Events, tasks, habits, goals, budget — all in one place. Powered by Google Gemini AI that actually understands your life.</p>
+  </div>
+  <div class="features-list">
+    <div class="feature-item">
+      <div class="feat-icon">🤖</div>
+      <div class="feat-text"><h3>Gemini AI Assistant</h3><p>Chat naturally to manage everything in your life</p></div>
+    </div>
+    <div class="feature-item">
+      <div class="feat-icon">📅</div>
+      <div class="feat-text"><h3>Smart Scheduling</h3><p>AI detects conflicts and suggests optimal times</p></div>
+    </div>
+    <div class="feature-item">
+      <div class="feat-icon">📊</div>
+      <div class="feat-text"><h3>Productivity Analytics</h3><p>Deep insights into how you spend your time</p></div>
+    </div>
+    <div class="feature-item">
+      <div class="feat-icon">🔥</div>
+      <div class="feat-text"><h3>Habit & Goal Tracking</h3><p>Build lasting habits with streak tracking</p></div>
+    </div>
+  </div>
+</div>
+
+<div class="auth-right">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="auth-form-wrap">
+    <div class="auth-tabs">
+      <div class="auth-tab active" onclick="switchTab('login')">Sign In</div>
+      <div class="auth-tab" onclick="switchTab('register')">Create Account</div>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <div class="auth-form active" id="loginForm">
+      <div class="auth-title">Welcome back 👋</div>
+      <div class="auth-subtitle">Sign in to your NEXUS account to continue</div>
+      <div class="error-msg" id="loginError"></div>
+      <form action="/api/auth/login" method="POST">
+        <div class="input-wrap">
+          <span class="input-icon">📧</span>
+          <input class="auth-input" type="email" name="email" placeholder="Email address" required autocomplete="email">
+        </div>
+        <div class="input-wrap">
+          <span class="input-icon">🔒</span>
+          <input class="auth-input" type="password" name="password" id="loginPwd" placeholder="Password" required autocomplete="current-password">
+          <button type="button" class="eye-btn" onclick="togglePwd('loginPwd')">👁</button>
+        </div>
+        <button type="submit" class="submit-btn">Sign In →</button>
+      </form>
+      <div class="demo-box">
+        <strong>🎮 Demo Accounts</strong><br>
+        Admin: <code>admin@nexus.ai</code> / <code>admin123</code><br>
+        User: <code>demo@nexus.ai</code> / <code>demo123</code>
+      </div>
+    </div>
+
+    <!-- REGISTER FORM -->
+    <div class="auth-form" id="registerForm">
+      <div class="auth-title">Get started free 🚀</div>
+      <div class="auth-subtitle">Create your account and pick a plan</div>
+      <div class="error-msg" id="registerError"></div>
+      <form action="/api/auth/register" method="POST">
+        <div class="input-wrap">
+          <span class="input-icon">👤</span>
+          <input class="auth-input" type="text" name="name" placeholder="Full name" required>
+        </div>
+        <div class="input-wrap">
+          <span class="input-icon">📧</span>
+          <input class="auth-input" type="email" name="email" placeholder="Email address" required>
+        </div>
+        <div class="input-wrap">
+          <span class="input-icon">🔒</span>
+          <input class="auth-input" type="password" name="password" id="regPwd" placeholder="Password (min 6 chars)" required minlength="6">
+          <button type="button" class="eye-btn" onclick="togglePwd('regPwd')">👁</button>
+        </div>
+        <div style="margin-bottom:8px;font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.3px;">Choose Plan</div>
+        <div class="plan-selector">
+          <div class="plan-opt selected" onclick="selectPlan(this,'free')">
+            <div class="plan-name">Free</div>
+            <div class="plan-price"><span>$0</span>/mo</div>
+          </div>
+          <div class="plan-opt" onclick="selectPlan(this,'pro')">
+            <div class="plan-name">Pro ⭐</div>
+            <div class="plan-price"><span>$9.99</span>/mo</div>
+          </div>
+          <div class="plan-opt" onclick="selectPlan(this,'team')">
+            <div class="plan-name">Team</div>
+            <div class="plan-price"><span>$29.99</span>/mo</div>
+          </div>
+        </div>
+        <input type="hidden" name="plan" id="selectedPlan" value="free">
+        <button type="submit" class="submit-btn">Create Account →</button>
+      </form>
+      <div class="pricing-link">Want to compare plans? <a href="/pricing">View pricing →</a></div>
+    </div>
+  </div>
+</div>
+
+<script>
+function switchTab(tab){
+  document.querySelectorAll('.auth-tab').forEach((t,i)=>t.classList.toggle('active',i===(tab==='login'?0:1)));
+  document.getElementById('loginForm').classList.toggle('active',tab==='login');
+  document.getElementById('registerForm').classList.toggle('active',tab==='register');
+}
+function togglePwd(id){const i=document.getElementById(id);i.type=i.type==='password'?'text':'password';}
+function selectPlan(el,plan){
+  document.querySelectorAll('.plan-opt').forEach(p=>p.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('selectedPlan').value=plan;
+}
+// Show error from URL
+const url=new URLSearchParams(location.search);
+if(url.get('error')){
+  const e=document.getElementById('loginError');
+  e.textContent=decodeURIComponent(url.get('error'));
+  e.classList.add('show');
+}
+// Open register tab if coming from /register or ?tab=register
+if(url.get('tab')==='register' || '{{ default_tab|default("") }}'==='register'){
+  switchTab('register');
+}
+</script>
+</body>
+</html>

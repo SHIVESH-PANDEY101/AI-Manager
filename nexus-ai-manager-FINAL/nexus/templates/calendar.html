@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Calendar{% endblock %}
+{% block page_title %}📅 Calendar{% endblock %}
+{% block topbar_actions %}<button class="tb-btn primary" onclick="openModal('evModal')">+ Add Event</button>{% endblock %}
+{% block content %}
+<div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
+  <button class="tb-btn" onclick="calNav(-1)">‹ Prev</button>
+  <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:700;flex:1;" id="calMonth"></div>
+  <button class="tb-btn" onclick="calNav(1)">Next ›</button>
+</div>
+<div class="card"><div id="calGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;"></div></div>
+<div class="modal-overlay" id="evModal">
+  <div class="modal"><div class="modal-title">Add Event</div><div class="modal-close" onclick="closeModal('evModal')">✕</div>
+    <div class="form-group"><label class="form-label">Title</label><input class="form-input" id="evTitle" placeholder="Event title..."></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Date</label><input class="form-input" id="evDate" type="date"></div>
+      <div class="form-group"><label class="form-label">Time</label><input class="form-input" id="evTime" type="time"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Category</label><select class="form-select" id="evCat"><option>Work</option><option>Personal</option><option>Health</option><option>Finance</option><option>Social</option></select></div>
+      <div class="form-group"><label class="form-label">Duration (hrs)</label><input class="form-input" id="evDur" type="number" min="0.5" step="0.5" value="1"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Location</label><input class="form-input" id="evLoc" placeholder="Location..."></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('evModal')">Cancel</button><button class="btn btn-primary" onclick="addEvent()">Add Event</button></div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+let events = {{ events|safe }};
+let calDate = new Date();
+const catC={Work:'#3b82f6',Personal:'#6366f1',Health:'#10b981',Finance:'#f59e0b',Social:'#ec4899'};
+function renderCal(){
+  const m=calDate.getMonth(),y=calDate.getFullYear();
+  document.getElementById('calMonth').textContent=calDate.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  const first=new Date(y,m,1),last=new Date(y,m+1,0);
+  const startDay=(first.getDay()+6)%7;
+  const today=new Date().toISOString().split('T')[0];
+  let html=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d=>`<div style="text-align:center;padding:8px;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;">${d}</div>`).join('');
+  for(let i=0;i<startDay;i++){const d2=new Date(y,m,-startDay+1+i);html+=`<div style="min-height:80px;padding:8px;opacity:.3;"><div style="font-size:12px;font-weight:600;">${d2.getDate()}</div></div>`;}
+  for(let day=1;day<=last.getDate();day++){
+    const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const isToday=ds===today;
+    const de=events.filter(e=>e.date===ds).slice(0,3);
+    html+=`<div onclick="document.getElementById('evDate').value='${ds}';openModal('evModal')" style="min-height:80px;padding:8px;border-radius:8px;border:1px solid transparent;cursor:pointer;transition:all .15s;${isToday?'background:rgba(59,130,246,0.08);border-color:rgba(59,130,246,0.3);':''}" onmouseover="this.style.background='var(--surf2)';this.style.borderColor='var(--border2)'" onmouseout="this.style.background='${isToday?'rgba(59,130,246,0.08)':''}';this.style.borderColor='${isToday?'rgba(59,130,246,0.3)':'transparent'}'">
+      <div style="font-size:12px;font-weight:600;${isToday?'background:var(--accent);color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;':''}margin-bottom:3px;">${day}</div>
+      ${de.map(e=>`<div style="font-size:9px;font-weight:600;padding:2px 5px;border-radius:3px;background:${catC[e.category]||'#3b82f6'}22;color:${catC[e.category]||'#3b82f6'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px;">${e.time} ${e.title}</div>`).join('')}
+    </div>`;
+  }
+  const rem=(7-((startDay+last.getDate())%7))%7;
+  for(let i=1;i<=rem;i++) html+=`<div style="min-height:80px;padding:8px;opacity:.3;"><div style="font-size:12px;font-weight:600;">${i}</div></div>`;
+  document.getElementById('calGrid').innerHTML=html;
+}
+function calNav(dir){calDate.setMonth(calDate.getMonth()+dir);renderCal();}
+async function addEvent(){
+  const title=document.getElementById('evTitle').value.trim();if(!title){toast('Enter title','error');return;}
+  const r=await api('POST','/api/events',{title,date:document.getElementById('evDate').value,time:document.getElementById('evTime').value,category:document.getElementById('evCat').value,duration:document.getElementById('evDur').value,location:document.getElementById('evLoc').value,description:''});
+  events.push({id:r.id,title,date:document.getElementById('evDate').value,time:document.getElementById('evTime').value,category:document.getElementById('evCat').value,duration:document.getElementById('evDur').value,location:document.getElementById('evLoc').value});
+  closeModal('evModal');renderCal();toast('Event added! 📅','success');
+  document.getElementById('evTitle').value='';
+}
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+async function api(m,u,b){const r=await fetch(u,{method:m,headers:{'Content-Type':'application/json'},body:b?JSON.stringify(b):undefined});return r.json();}
+function toast(msg,type){const icons={success:'✅',error:'❌',info:'💡'};const c=document.getElementById('toast-container');const t=document.createElement('div');t.className=`toast ${type}`;t.innerHTML=`<span style="font-size:16px">${icons[type]||'💡'}</span><span>${msg}</span>`;c.appendChild(t);setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),300);},3500);}
+document.getElementById('evDate').value=new Date().toISOString().split('T')[0];
+renderCal();
+</script>
+{% endblock %}

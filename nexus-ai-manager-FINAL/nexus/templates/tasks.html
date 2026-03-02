@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Tasks{% endblock %}
+{% block page_title %}✅ Tasks & Projects{% endblock %}
+{% block topbar_actions %}
+<button class="tb-btn" onclick="aiSuggestTasks()">🤖 AI Suggest</button>
+<button class="tb-btn primary" onclick="openModal('taskModal')">+ New Task</button>
+{% endblock %}
+{% block extra_head %}
+<style>
+.kanban{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;overflow-x:auto;}
+.kcol{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;min-height:300px;}
+.kcol-head{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border);}
+.kc-dot{width:8px;height:8px;border-radius:50%;}
+.kc-title{font-size:13px;font-weight:600;flex:1;}
+.kc-count{font-size:11px;font-weight:700;background:var(--surf3);padding:2px 8px;border-radius:8px;}
+.tcard{background:var(--surf2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px;cursor:pointer;transition:all .15s;}
+.tcard:hover{border-color:var(--border2);transform:translateY(-1px);}
+.tcard-title{font-size:13px;font-weight:500;margin-bottom:8px;line-height:1.4;}
+.tcard-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.pdot{width:6px;height:6px;border-radius:50%;}
+.p-high{background:var(--a5);}.p-med{background:var(--a4);}.p-low{background:var(--a3);}
+.add-col{margin-top:8px;padding:8px;border:1px dashed var(--border2);border-radius:8px;font-size:12px;color:var(--text3);text-align:center;cursor:pointer;transition:all .15s;}
+.add-col:hover{color:var(--text2);border-color:var(--accent);}
+@media(max-width:1100px){.kanban{grid-template-columns:repeat(2,1fr);}}
+</style>
+{% endblock %}
+{% block content %}
+<div class="kanban" id="kanban"></div>
+
+<!-- TASK MODAL -->
+<div class="modal-overlay" id="taskModal">
+  <div class="modal">
+    <div class="modal-title">Add Task</div>
+    <div class="modal-close" onclick="closeModal('taskModal')">✕</div>
+    <div class="form-group"><label class="form-label">Title</label><input class="form-input" id="tTitle" placeholder="Task title..."></div>
+    <div class="form-group"><label class="form-label">Description</label><textarea class="form-textarea" id="tDesc" placeholder="Details..."></textarea></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Priority</label>
+        <select class="form-select" id="tPri"><option value="high">🔴 High</option><option value="med" selected>🟡 Medium</option><option value="low">🟢 Low</option></select>
+      </div>
+      <div class="form-group"><label class="form-label">Due Date</label><input class="form-input" id="tDue" type="date"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Category</label>
+        <select class="form-select" id="tCat"><option>Work</option><option>Personal</option><option>Health</option><option>Learning</option></select>
+      </div>
+      <div class="form-group"><label class="form-label">Project</label><input class="form-input" id="tProj" placeholder="Project name..."></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('taskModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="addTask()">Add Task</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+let tasks = {{ tasks|safe }};
+const catC={Work:'rgba(59,130,246,0.15)',Personal:'rgba(99,102,241,0.15)',Health:'rgba(16,185,129,0.15)',Learning:'rgba(245,158,11,0.15)'};
+const catT={Work:'#3b82f6',Personal:'#6366f1',Health:'#10b981',Learning:'#f59e0b'};
+const cols=[{id:'todo',label:'To Do',color:'#3b82f6'},{id:'inprogress',label:'In Progress',color:'#f59e0b'},{id:'done',label:'Done',color:'#10b981'},{id:'blocked',label:'Blocked',color:'#ef4444'}];
+
+function renderKanban(){
+  document.getElementById('kanban').innerHTML=cols.map(col=>{
+    const ct=tasks.filter(t=>t.status===col.id);
+    return `<div class="kcol">
+      <div class="kcol-head"><div class="kc-dot" style="background:${col.color}"></div><div class="kc-title">${col.label}</div><div class="kc-count">${ct.length}</div></div>
+      ${ct.map(t=>`<div class="tcard" onclick="cycleStatus('${t.id}')">
+        <div class="tcard-title">${t.title}</div>
+        <div class="tcard-meta">
+          <div class="pdot p-${t.priority}"></div>
+          <span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;background:${catC[t.category]||catC.Work};color:${catT[t.category]||catT.Work}">${t.category}</span>
+          ${t.due_date?`<span style="font-size:11px;color:var(--text2);margin-left:auto">📅 ${t.due_date}</span>`:''}
+          <button onclick="event.stopPropagation();deleteTask('${t.id}')" style="margin-left:auto;background:none;border:none;cursor:pointer;color:var(--text3);font-size:12px;padding:2px;">✕</button>
+        </div>
+      </div>`).join('')}
+      <div class="add-col" onclick="document.getElementById('tTitle').focus();openModal('taskModal')">+ Add task</div>
+    </div>`;
+  }).join('');
+}
+
+async function cycleStatus(id){
+  const order=['todo','inprogress','done','blocked'];
+  const t=tasks.find(t=>t.id===id); if(!t)return;
+  t.status=order[(order.indexOf(t.status)+1)%order.length];
+  await api('PATCH',`/api/tasks/${id}/status`,{status:t.status});
+  renderKanban(); toast(`Moved to ${t.status}`,'success');
+}
+
+async function addTask(){
+  const title=document.getElementById('tTitle').value.trim();
+  if(!title){toast('Enter a title','error');return;}
+  const r=await api('POST','/api/tasks',{title,description:document.getElementById('tDesc').value,category:document.getElementById('tCat').value,priority:document.getElementById('tPri').value,due_date:document.getElementById('tDue').value,project:document.getElementById('tProj').value,status:'todo'});
+  tasks.unshift({id:r.id,title,description:'',category:document.getElementById('tCat').value,priority:document.getElementById('tPri').value,status:'todo',due_date:document.getElementById('tDue').value,project:document.getElementById('tProj').value});
+  closeModal('taskModal'); renderKanban(); toast('Task added! ✅','success');
+  document.getElementById('tTitle').value=''; document.getElementById('tDesc').value='';
+}
+
+async function deleteTask(id){
+  await api('DELETE',`/api/tasks/${id}`);
+  tasks=tasks.filter(t=>t.id!==id); renderKanban(); toast('Task deleted','info');
+}
+
+async function aiSuggestTasks(){
+  toast('🤖 Generating AI task suggestions...','info');
+  try{
+    const r=await api('POST','/api/ai/suggest-tasks');
+    if(r.tasks&&r.tasks.length){
+      for(const title of r.tasks){
+        const res=await api('POST','/api/tasks',{title,category:'Work',priority:'med',status:'todo',description:'AI suggested',due_date:'',project:''});
+        tasks.unshift({id:res.id,title,category:'Work',priority:'med',status:'todo',due_date:'',project:''});
+      }
+      renderKanban(); toast(`✅ Added ${r.tasks.length} AI-suggested tasks`,'success');
+    }
+  }catch(e){toast('Error: '+e.message,'error');}
+}
+
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open'));});
+document.getElementById('tDue').value=new Date().toISOString().split('T')[0];
+renderKanban();
+</script>
+{% endblock %}

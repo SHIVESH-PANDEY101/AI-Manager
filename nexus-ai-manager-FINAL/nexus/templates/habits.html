@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}Habits{% endblock %}
+{% block page_title %}🔥 Habit Tracker{% endblock %}
+{% block topbar_actions %}
+<button class="tb-btn" onclick="getAIAdvice()">🤖 AI Advice</button>
+<button class="tb-btn primary" onclick="openModal('habitModal')">+ New Habit</button>
+{% endblock %}
+{% block content %}
+<div class="grid2 mb-4">
+  <div class="card">
+    <div class="card-title">🔥 Today's Habits</div>
+    <div id="habitsContainer">
+      {% if habits_json == '[]' %}
+      <div class="empty-state"><div class="empty-icon">🔥</div><p>No habits yet. Create your first one!</p></div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">📊 Completion Rate (7 Days)</div>
+    <canvas id="habitChart" height="220"></canvas>
+  </div>
+</div>
+<div class="card">
+  <div class="card-title">📅 Habit Heatmap (Last 3 Weeks)</div>
+  <div id="heatmap" style="display:flex;gap:4px;flex-wrap:wrap;margin-top:8px;"></div>
+</div>
+
+<div class="modal-overlay" id="habitModal">
+  <div class="modal">
+    <div class="modal-title">New Habit</div>
+    <div class="modal-close" onclick="closeModal('habitModal')">✕</div>
+    <div class="form-group"><label class="form-label">Habit Name</label><input class="form-input" id="hName" placeholder="e.g. Morning Run, Read 30 mins..."></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Category</label>
+        <select class="form-select" id="hCat"><option>Health</option><option>Learning</option><option>Finance</option><option>Mindfulness</option><option>Social</option></select>
+      </div>
+      <div class="form-group"><label class="form-label">Frequency</label>
+        <select class="form-select" id="hFreq"><option value="daily">Daily</option><option value="weekdays">Weekdays</option><option value="weekends">Weekends</option></select>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Icon (emoji)</label><input class="form-input" id="hIcon" value="✅" maxlength="2"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('habitModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="addHabit()">Create Habit</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+let habits = {{ habits|safe }};
+const today = new Date().toISOString().split('T')[0];
+
+function renderHabits(){
+  const c=document.getElementById('habitsContainer');
+  if(!habits.length){c.innerHTML='<div class="empty-state"><div class="empty-icon">🔥</div><p>No habits yet!</p></div>';return;}
+  c.innerHTML=habits.map(h=>{
+    const todayDone=h.today_done||h.history.some(x=>x.date===today&&x.done);
+    return `<div style="display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:10px;border:1px solid var(--border);background:var(--surface);margin-bottom:8px;transition:all .15s;">
+      <span style="font-size:22px;">${h.icon}</span>
+      <div style="flex:1;"><div style="font-size:14px;font-weight:600;margin-bottom:2px;">${h.name}</div><div style="font-size:11px;color:var(--text2);">🔥 ${h.streak} day streak · ${h.frequency}</div></div>
+      <div style="display:flex;gap:3px;">${h.history.slice(-7).map(d=>`<div style="width:12px;height:12px;border-radius:3px;background:${d.done?'var(--a3)':'var(--surf3)'};border:1px solid var(--border);" title="${d.date}"></div>`).join('')}</div>
+      <button onclick="toggleHabit('${h.id}')" style="width:34px;height:34px;border-radius:50%;border:2px solid ${todayDone?'var(--a3)':'var(--border2)'};background:${todayDone?'var(--a3)':'transparent'};cursor:pointer;font-size:14px;transition:all .2s;display:flex;align-items:center;justify-content:center;">${todayDone?'✓':''}</button>
+      <button onclick="deleteHabit('${h.id}')" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:13px;padding:4px;">✕</button>
+    </div>`;
+  }).join('');
+}
+
+async function toggleHabit(id){
+  const r=await fetch(`/api/habits/${id}/toggle`,{method:'POST'});
+  const d=await r.json();
+  const h=habits.find(h=>h.id===id);
+  if(h){h.today_done=d.done;if(d.done)h.streak++;else h.streak=Math.max(0,h.streak-1);}
+  renderHabits();
+  toast(d.done?'✅ Habit completed! Keep it up!':'Habit unchecked',d.done?'success':'info');
+}
+
+async function addHabit(){
+  const name=document.getElementById('hName').value.trim();
+  if(!name){toast('Enter habit name','error');return;}
+  const r=await api('POST','/api/habits',{name,icon:document.getElementById('hIcon').value||'✅',category:document.getElementById('hCat').value,frequency:document.getElementById('hFreq').value});
+  habits.push({id:r.id,name,icon:document.getElementById('hIcon').value||'✅',category:document.getElementById('hCat').value,frequency:document.getElementById('hFreq').value,streak:0,history:[],today_done:false});
+  closeModal('habitModal'); renderHabits(); toast('Habit created! 🔥','success');
+  document.getElementById('hName').value='';
+}
+
+async function deleteHabit(id){
+  await api('DELETE',`/api/habits/${id}`);
+  habits=habits.filter(h=>h.id!==id); renderHabits(); toast('Habit deleted','info');
+}
+
+async function getAIAdvice(){
+  toast('🤖 Getting AI habit advice...','info');
+  const r=await api('POST','/api/ai/chat',{message:`Give me 3 specific tips to improve my ${habits.length} habits. My best streak is ${Math.max(...habits.map(h=>h.streak),0)} days. Be brief and actionable.`});
+  if(r.reply) toast(r.reply.substring(0,100)+'...','info');
+}
+
+// Heatmap
+function renderHeatmap(){
+  const hm=document.getElementById('heatmap');
+  for(let i=20;i>=0;i--){
+    const d=new Date();d.setDate(d.getDate()-i);
+    const ds=d.toISOString().split('T')[0];
+    const count=habits.filter(h=>h.history.some(x=>x.date===ds&&x.done)).length;
+    const total=habits.length||1;
+    const opacity=(count/total)*0.8+0.05;
+    hm.innerHTML+=`<div title="${ds}: ${count}/${total} habits" style="width:16px;height:16px;border-radius:3px;background:rgba(59,130,246,${opacity});border:1px solid var(--border);cursor:default;"></div>`;
+  }
+}
+
+// Chart
+new Chart(document.getElementById('habitChart').getContext('2d'),{
+  type:'line',
+  data:{
+    labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+    datasets:habits.slice(0,3).map((h,i)=>({
+      label:h.name,
+      data:h.history.slice(-7).map(d=>d.done?1:0),
+      borderColor:['#3b82f6','#10b981','#f59e0b'][i],
+      backgroundColor:['rgba(59,130,246,0.08)','rgba(16,185,129,0.08)','rgba(245,158,11,0.08)'][i],
+      fill:true,tension:.4,pointRadius:4
+    }))
+  },
+  options:{responsive:true,plugins:{legend:{labels:{color:'#7889a8',font:{family:'DM Sans'}}}},scales:{x:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#7889a8'}},y:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#7889a8'},min:0,max:1}}}
+});
+
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+async function api(m,u,b){const r=await fetch(u,{method:m,headers:{'Content-Type':'application/json'},body:b?JSON.stringify(b):undefined});return r.json();}
+function toast(msg,type){const icons={success:'✅',error:'❌',info:'💡'};const c=document.getElementById('toast-container');const t=document.createElement('div');t.className=`toast ${type}`;t.innerHTML=`<span style="font-size:16px">${icons[type]||'💡'}</span><span>${msg}</span>`;c.appendChild(t);setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),300);},3500);}
+renderHabits(); renderHeatmap();
+</script>
+{% endblock %}

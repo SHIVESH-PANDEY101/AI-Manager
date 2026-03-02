@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block page_title %}⚙️ Settings{% endblock %}
+{% block content %}
+{% if request.query_params.get('saved') %}
+<div style="background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:12px;padding:14px 18px;margin-bottom:20px;font-size:14px;color:var(--a3);">✅ Settings saved successfully!</div>
+{% endif %}
+<div style="max-width:680px;">
+  <div class="card mb-4">
+    <div class="card-title">👤 Profile</div>
+    <form action="/api/settings/update" method="POST">
+      <div class="form-group"><label class="form-label">Display Name</label><input class="form-input" name="name" value="{{ user.name }}" required></div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" value="{{ user.email }}" disabled style="opacity:.6;cursor:not-allowed;"></div>
+      <div class="form-group"><label class="form-label">Plan</label>
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surf2);border:1px solid var(--border2);border-radius:10px;">
+          <span class="plan-badge plan-{{ user.plan }}">{{ user.plan.title() }}</span>
+          <a href="/billing" style="font-size:12px;color:var(--accent);">Manage →</a>
+        </div>
+      </div>
+      <button class="btn btn-primary" type="submit">Save Profile</button>
+    </form>
+  </div>
+  <div class="card mb-4">
+    <div class="card-title">🔒 Change Password</div>
+    <form action="/api/settings/password" method="POST">
+      <div class="form-group"><label class="form-label">Current Password</label><input class="form-input" type="password" name="current" required></div>
+      <div class="form-group"><label class="form-label">New Password</label><input class="form-input" type="password" name="new_pass" minlength="6" required></div>
+      <button class="btn btn-ghost" type="submit">Update Password</button>
+    </form>
+  </div>
+  <div class="card mb-4">
+    <div class="card-title">🤖 AI Usage</div>
+    <div style="padding:14px;background:var(--surf2);border-radius:10px;font-size:13px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span style="color:var(--text2);">Plan</span><span class="plan-badge plan-{{ user.plan }}">{{ user.plan.title() }}</span></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span style="color:var(--text2);">AI Calls Today</span><span style="font-weight:700;">{{ user.ai_calls_today }}</span></div>
+      <div style="display:flex;justify-content:space-between;"><span style="color:var(--text2);">Gemini Model</span><span style="color:var(--accent);">gemini-1.5-flash</span></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">⚠️ Danger Zone</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:14px;">These actions are irreversible. Please be careful.</div>
+    <div class="flex gap-3">
+      <a href="/api/auth/logout" class="btn btn-ghost">🚪 Logout</a>
+      <a href="/billing" class="btn btn-ghost" style="color:var(--a5);">❌ Cancel Plan</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

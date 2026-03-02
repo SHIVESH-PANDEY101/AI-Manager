@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>NEXUS — Pricing</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#04080f;--surface:#0b1120;--surf2:#0f1629;--border:rgba(100,160,255,0.08);--border2:rgba(100,160,255,0.18);--accent:#3b82f6;--a2:#6366f1;--a3:#10b981;--text:#e8f0ff;--text2:#7889a8;--glow:rgba(59,130,246,0.25);}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 800px 600px at 50% 20%,rgba(59,130,246,0.06) 0%,transparent 70%);pointer-events:none;}
+nav{display:flex;align-items:center;justify-content:space-between;padding:20px 60px;border-bottom:1px solid var(--border);}
+.nav-brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--text);}
+.nav-logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--a2));display:flex;align-items:center;justify-content:center;font-size:18px;}
+.nav-name{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;}
+.nav-name span{color:var(--accent);}
+.nav-links{display:flex;gap:8px;}
+.nav-btn{background:var(--surf2);border:1px solid var(--border2);border-radius:10px;padding:8px 18px;color:var(--text2);font-size:13px;font-weight:500;text-decoration:none;transition:all .15s;}
+.nav-btn:hover{color:var(--text);}
+.nav-btn.primary{background:linear-gradient(135deg,var(--accent),var(--a2));border-color:transparent;color:#fff;box-shadow:0 4px 15px var(--glow);}
+.hero{text-align:center;padding:80px 20px 60px;position:relative;z-index:1;}
+.hero h1{font-family:'Syne',sans-serif;font-size:clamp(32px,5vw,56px);font-weight:800;letter-spacing:-1.5px;line-height:1.1;margin-bottom:20px;}
+.hero h1 span{background:linear-gradient(135deg,var(--accent),var(--a2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hero p{font-size:16px;color:var(--text2);max-width:480px;margin:0 auto 40px;line-height:1.7;}
+.toggle-wrap{display:flex;align-items:center;gap:12px;justify-content:center;margin-bottom:60px;font-size:14px;}
+.toggle-pill{width:48px;height:26px;background:var(--surf2);border:1px solid var(--border2);border-radius:13px;cursor:pointer;position:relative;transition:background .2s;}
+.toggle-pill.active{background:var(--accent);}
+.toggle-pill::before{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s;}
+.toggle-pill.active::before{transform:translateX(22px);}
+.save-badge{background:rgba(16,185,129,.15);color:var(--a3);font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;}
+.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;max-width:1000px;margin:0 auto;padding:0 24px 80px;}
+.plan-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:32px;position:relative;overflow:hidden;transition:all .2s;}
+.plan-card:hover{border-color:var(--border2);transform:translateY(-4px);}
+.plan-card.popular{border-color:rgba(59,130,246,.35);box-shadow:0 0 40px rgba(59,130,246,.08);}
+.plan-card.popular::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--a2));}
+.popular-badge{position:absolute;top:16px;right:16px;background:linear-gradient(135deg,var(--accent),var(--a2));border-radius:20px;padding:3px 12px;font-size:10px;font-weight:700;letter-spacing:.5px;}
+.plan-name{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;margin-bottom:8px;}
+.plan-price{margin-bottom:24px;}
+.plan-price .price{font-family:'Syne',sans-serif;font-size:40px;font-weight:800;letter-spacing:-1px;}
+.plan-price .period{font-size:14px;color:var(--text2);}
+.plan-price .annual{font-size:12px;color:var(--a3);margin-top:2px;}
+.plan-features{margin-bottom:28px;}
+.plan-feature{display:flex;align-items:center;gap:10px;padding:7px 0;font-size:13px;border-bottom:1px solid var(--border);}
+.plan-feature:last-child{border-bottom:none;}
+.feat-check{color:var(--a3);font-size:14px;flex-shrink:0;}
+.plan-btn{width:100%;background:linear-gradient(135deg,var(--accent),var(--a2));border:none;border-radius:12px;padding:13px;color:#fff;font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;transition:opacity .2s;box-shadow:0 4px 20px var(--glow);text-decoration:none;display:block;text-align:center;}
+.plan-btn:hover{opacity:.9;}
+.plan-btn.ghost{background:var(--surf2);border:1px solid var(--border2);color:var(--text2);box-shadow:none;}
+.plan-btn.ghost:hover{color:var(--text);}
+.faq{max-width:700px;margin:0 auto;padding:0 24px 80px;}
+.faq h2{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;text-align:center;margin-bottom:32px;letter-spacing:-.5px;}
+.faq-item{border-bottom:1px solid var(--border);padding:20px 0;}
+.faq-q{font-size:15px;font-weight:600;cursor:pointer;display:flex;justify-content:space-between;align-items:center;}
+.faq-a{font-size:14px;color:var(--text2);line-height:1.7;margin-top:12px;display:none;}
+.faq-a.open{display:block;}
+@media(max-width:768px){.plans{grid-template-columns:1fr;}nav{padding:16px 20px;}}
+</style>
+</head>
+<body>
+<nav>
+  <a class="nav-brand" href="/"><div class="nav-logo">🧠</div><div class="nav-name"><span>NEX</span>US</div></a>
+  <div class="nav-links">
+    <a class="nav-btn" href="/login">Sign In</a>
+    <a class="nav-btn primary" href="/register">Get Started Free</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <h1>Simple, transparent<br><span>pricing for everyone</span></h1>
+  <p>Start free, upgrade when you need more AI power. No hidden fees, cancel anytime.</p>
+  <div class="toggle-wrap">
+    <span>Monthly</span>
+    <div class="toggle-pill" id="billingToggle" onclick="toggleBilling()"></div>
+    <span>Annual</span>
+    <span class="save-badge">Save up to 17%</span>
+  </div>
+</div>
+
+<div class="plans">
+{% for plan in plans %}
+<div class="plan-card {{ 'popular' if plan.is_popular }}">
+  {% if plan.is_popular %}<div class="popular-badge">⭐ MOST POPULAR</div>{% endif %}
+  <div class="plan-name">{{ plan.name }}</div>
+  <div class="plan-price">
+    <div><span class="price" id="price-{{ loop.index }}">${{ "%.0f"|format(plan.price_month) if plan.price_month else "0" }}</span><span class="period">/month</span></div>
+    {% if plan.price_year > 0 %}
+    <div class="annual" id="annual-{{ loop.index }}">${{ "%.0f"|format(plan.price_year) }}/year billed annually</div>
+    {% endif %}
+  </div>
+  <div class="plan-features">
+    {% for feature in plan.features %}
+    <div class="plan-feature"><span class="feat-check">✓</span>{{ feature }}</div>
+    {% endfor %}
+  </div>
+  {% if plan.name.lower() == 'free' %}
+  <a href="/register" class="plan-btn ghost">Get Started Free</a>
+  {% else %}
+  <a href="/register?plan={{ plan.name.lower() }}" class="plan-btn">Get {{ plan.name }} →</a>
+  {% endif %}
+</div>
+{% endfor %}
+</div>
+
+<div class="faq">
+  <h2>Frequently Asked Questions</h2>
+  {% set faqs = [
+    ("Is the Free plan really free?", "Yes! The Free plan is completely free forever. You get 20 AI calls per day, up to 5 events, 10 tasks, and 3 habits. No credit card required."),
+    ("What's included in the AI calls?", "Every time you chat with the AI assistant, get a briefing, request task suggestions, or ask for budget advice counts as one AI call. Pro users get 200 calls/day, Team users get 1,000."),
+    ("Can I cancel anytime?", "Absolutely. You can cancel your subscription at any time from the Billing page. You'll keep your data and drop to the Free tier."),
+    ("Is my data secure?", "Your data is stored securely in our database. We use industry-standard encryption and never sell your personal data."),
+    ("What AI model powers NEXUS?", "NEXUS is powered by Google Gemini 1.5 Flash, Google's fast and capable AI model, completely free to use within your plan limits."),
+  ] %}
+  {% for q, a in faqs %}
+  <div class="faq-item">
+    <div class="faq-q" onclick="this.nextElementSibling.classList.toggle('open')">{{ q }}<span>+</span></div>
+    <div class="faq-a">{{ a }}</div>
+  </div>
+  {% endfor %}
+</div>
+
+<script>
+let isAnnual = false;
+const prices = {{ [[p.price_month, p.price_year] for p in plans]|tojson }};
+function toggleBilling(){
+  isAnnual=!isAnnual;
+  document.getElementById('billingToggle').classList.toggle('active',isAnnual);
+  prices.forEach(([m,y],i)=>{
+    const el=document.getElementById('price-'+(i+1));
+    if(el)el.textContent='$'+(isAnnual&&y>0?Math.round(y/12):Math.round(m));
+  });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Billing{% endblock %}
+{% block page_title %}💳 Billing & Plans{% endblock %}
+{% block content %}
+{% if request.query_params.get('success') %}
+<div style="background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:12px;padding:14px 18px;margin-bottom:20px;font-size:14px;color:var(--a3);">✅ Plan upgraded successfully! Your new features are now active.</div>
+{% endif %}
+{% if request.query_params.get('cancelled') %}
+<div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:12px;padding:14px 18px;margin-bottom:20px;font-size:14px;color:var(--a4);">⚠️ Plan cancelled. You've been moved to the Free plan.</div>
+{% endif %}
+
+<!-- CURRENT PLAN -->
+<div style="background:linear-gradient(135deg,rgba(59,130,246,0.08),rgba(99,102,241,0.05));border:1px solid rgba(59,130,246,0.2);border-radius:16px;padding:24px;margin-bottom:28px;position:relative;overflow:hidden;">
+  <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent),transparent);"></div>
+  <div class="flex items-center gap-4">
+    <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--a2));display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 0 20px var(--glow);">💎</div>
+    <div style="flex:1;">
+      <div style="font-size:13px;color:var(--text2);font-weight:500;margin-bottom:4px;">Current Plan</div>
+      <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;letter-spacing:-.3px;">{{ user.plan.title() }} Plan
+        {% if user.plan == 'pro' %}<span class="badge badge-blue" style="font-size:12px;margin-left:8px;">⭐ ACTIVE</span>{% endif %}
+        {% if user.plan == 'team' %}<span class="badge badge-purple" style="font-size:12px;margin-left:8px;">🏆 ACTIVE</span>{% endif %}
+        {% if user.plan == 'free' %}<span class="badge" style="font-size:12px;margin-left:8px;background:var(--surf3);">FREE</span>{% endif %}
+      </div>
+    </div>
+    {% if user.plan != 'free' %}
+    <form action="/api/billing/cancel" method="POST" onsubmit="return confirm('Cancel your plan?')">
+      <button class="btn btn-danger btn-sm" type="submit">Cancel Plan</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<!-- PLANS -->
+<div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:700;margin-bottom:6px;">Choose Your Plan</div>
+<div style="font-size:13px;color:var(--text2);margin-bottom:24px;">Upgrade anytime. All plans include 14-day money-back guarantee.</div>
+
+<div class="grid3 mb-6">
+{% for plan in plans %}
+<div style="background:var(--surface);border:1px solid {% if plan.is_popular %}rgba(59,130,246,0.35){% else %}var(--border){% endif %};border-radius:20px;padding:28px;position:relative;overflow:hidden;transition:all .2s;{% if plan.is_popular %}box-shadow:0 0 40px rgba(59,130,246,0.1);{% endif %}">
+  {% if plan.is_popular %}
+  <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--a2));"></div>
+  <div style="position:absolute;top:16px;right:16px;background:linear-gradient(135deg,var(--accent),var(--a2));border-radius:20px;padding:3px 12px;font-size:10px;font-weight:700;letter-spacing:.5px;">POPULAR</div>
+  {% endif %}
+  <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;margin-bottom:6px;">{{ plan.name }}</div>
+  <div style="margin-bottom:20px;">
+    <span style="font-family:'Syne',sans-serif;font-size:36px;font-weight:800;letter-spacing:-1px;">${{ "%.0f"|format(plan.price_month) if plan.price_month else "0" }}</span>
+    <span style="font-size:13px;color:var(--text2);">/month</span>
+    {% if plan.price_year > 0 %}<div style="font-size:12px;color:var(--a3);margin-top:2px;">or ${{ "%.0f"|format(plan.price_year) }}/year (save {{ "%.0f"|format((1 - plan.price_year/(plan.price_month*12))*100) }}%)</div>{% endif %}
+  </div>
+  <div style="margin-bottom:22px;">
+    {% for feature in plan.features %}
+    <div style="display:flex;align-items:center;gap:10px;padding:7px 0;font-size:13px;border-bottom:1px solid var(--border);">
+      <span style="color:var(--a3);font-size:14px;">✓</span>{{ feature }}
+    </div>
+    {% endfor %}
+  </div>
+  {% if user.plan == plan.name.lower() %}
+  <button class="btn w-full" style="background:var(--surf3);color:var(--text2);cursor:default;">✓ Current Plan</button>
+  {% else %}
+  <form action="/api/billing/upgrade" method="POST">
+    <input type="hidden" name="plan" value="{{ plan.name.lower() }}">
+    <button class="btn btn-primary w-full" type="submit" {% if plan.name.lower()=='free' %}onclick="return false"{% endif %}>
+      {% if plan.name.lower()=='free' %}Downgrade{% else %}Upgrade to {{ plan.name }}{% endif %} →
+    </button>
+  </form>
+  {% endif %}
+</div>
+{% endfor %}
+</div>
+
+<!-- BILLING HISTORY -->
+<div class="card">
+  <div class="card-title">📋 Billing History</div>
+  {% if history %}
+  <table class="table">
+    <thead><tr><th>Invoice</th><th>Plan</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
+    <tbody>
+    {% for b in history %}
+    <tr>
+      <td style="color:var(--text);font-weight:500;">{{ b.invoice_id or 'INV-'+b.id[:8].upper() }}</td>
+      <td><span class="badge badge-blue">{{ b.plan.title() }}</span></td>
+      <td style="color:var(--a3);font-weight:700;">${{ "%.2f"|format(b.amount) }}</td>
+      <td><span class="badge {% if b.status=='paid' %}badge-green{% else %}badge-amber{% endif %}">{{ b.status.title() }}</span></td>
+      <td style="color:var(--text2);">{{ b.created_at[:10] }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state"><div class="empty-icon">📋</div><p>No billing history yet.</p></div>
+  {% endif %}
+</div>
+{% endblock %}

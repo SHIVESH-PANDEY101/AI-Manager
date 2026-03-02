@@ -1,0 +1,48 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Admin Billing</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#04080f;--surface:#0b0f1f;--surf2:#0f1329;--surf3:#131828;--border:rgba(180,100,255,0.08);--border2:rgba(180,100,255,0.15);--accent:#8b5cf6;--a3:#10b981;--a4:#f59e0b;--a5:#ef4444;--text:#ede8ff;--text2:#7870a8;--text3:#3d3860;}
+*{margin:0;padding:0;box-sizing:border-box;}body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:24px;}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;}
+.back-btn{background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:8px 16px;color:var(--text);font-size:13px;cursor:pointer;text-decoration:none;}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;}
+.stat-val{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;letter-spacing:-1px;}
+.stat-lbl{font-size:13px;color:var(--text2);}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;overflow-x:auto;}
+.table{width:100%;border-collapse:collapse;font-size:13px;}
+.table th{padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.8px;text-transform:uppercase;border-bottom:1px solid var(--border);}
+.table td{padding:12px 14px;border-bottom:1px solid var(--border);color:var(--text2);}
+.table tr:hover td{background:var(--surf2);}
+.badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;}
+.b-p{background:rgba(139,92,246,.15);color:#8b5cf6;}.b-g{background:rgba(16,185,129,.15);color:#10b981;}.b-a{background:rgba(245,158,11,.15);color:#f59e0b;}
+</style></head><body>
+<div class="header">
+  <a href="/admin" class="back-btn">← Admin Dashboard</a>
+  <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;">Billing Overview</div>
+</div>
+<div class="stats">
+  <div class="stat"><div class="stat-val" style="color:#10b981;">${{ "%.2f"|format(revenue) }}</div><div class="stat-lbl">Total Revenue (Paid)</div></div>
+  <div class="stat"><div class="stat-val" style="color:#f59e0b;">${{ "%.2f"|format(pending) }}</div><div class="stat-lbl">Pending Payments</div></div>
+  <div class="stat"><div class="stat-val">{{ billing|length }}</div><div class="stat-lbl">Total Transactions</div></div>
+</div>
+<div class="card">
+<table class="table">
+<thead><tr><th>User</th><th>Email</th><th>Plan</th><th>Amount</th><th>Invoice</th><th>Status</th><th>Date</th></tr></thead>
+<tbody>
+{% for b in billing %}
+<tr>
+  <td style="color:var(--text);font-weight:600;">{{ b.name }}</td>
+  <td>{{ b.email }}</td>
+  <td><span class="badge b-p">{{ b.plan.title() }}</span></td>
+  <td style="color:#10b981;font-weight:700;">${{ "%.2f"|format(b.amount) }}</td>
+  <td style="font-family:monospace;font-size:11px;">{{ b.invoice_id or 'N/A' }}</td>
+  <td><span class="badge {{ 'b-g' if b.status=='paid' else 'b-a' }}">{{ b.status.title() }}</span></td>
+  <td style="font-size:11px;">{{ b.created_at[:10] }}</td>
+</tr>
+{% endfor %}
+{% if not billing %}<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text3);">No billing records</td></tr>{% endif %}
+</tbody>
+</table>
+</div>
+</body></html>

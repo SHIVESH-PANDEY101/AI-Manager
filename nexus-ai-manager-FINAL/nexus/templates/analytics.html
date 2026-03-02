@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Analytics{% endblock %}
+{% block page_title %}📊 Analytics{% endblock %}
+{% block topbar_actions %}<button class="tb-btn" onclick="genReport()">🤖 AI Report</button>{% endblock %}
+{% block content %}
+<div class="grid4 mb-4">
+  <div class="stat-card sc-blue"><div class="stat-icon si-blue">✅</div><div class="stat-value">{{ task_done }}/{{ task_total }}</div><div class="stat-label">Tasks Completed</div></div>
+  <div class="stat-card sc-green"><div class="stat-icon si-green">🔥</div><div class="stat-value">{{ habit_count }}</div><div class="stat-label">Active Habits</div></div>
+  <div class="stat-card sc-amber"><div class="stat-icon si-amber">🎯</div><div class="stat-value">{{ goal_avg|round(0)|int }}%</div><div class="stat-label">Avg Goal Progress</div></div>
+  <div class="stat-card sc-purple"><div class="stat-icon si-purple">💰</div><div class="stat-value">${{ (income - expense)|round(0)|int }}</div><div class="stat-label">Net Balance</div></div>
+</div>
+<div class="grid2 mb-4">
+  <div class="card"><div class="card-title">Productivity Score (7 Days)</div><canvas id="prodChart" height="220"></canvas></div>
+  <div class="card"><div class="card-title">Time Distribution</div><canvas id="timeChart" height="220"></canvas></div>
+</div>
+<div class="grid2">
+  <div class="card"><div class="card-title">Tasks Per Day</div><canvas id="taskChart" height="200"></canvas></div>
+  <div class="card"><div class="card-title">🤖 AI Monthly Report</div><div id="aiReport" style="font-size:13px;line-height:1.75;color:var(--text2);">Click "AI Report" to generate your personalized monthly analysis.</div></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const chartOpts={responsive:true,plugins:{legend:{labels:{color:'#7889a8',font:{family:'DM Sans'}}}},scales:{x:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#7889a8'}},y:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#7889a8'}}}};
+new Chart(document.getElementById('prodChart').getContext('2d'),{type:'line',data:{labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],datasets:[{label:'Productivity',data:[72,85,78,91,88,65,84],borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.1)',fill:true,tension:.4,pointRadius:5,pointBackgroundColor:'#3b82f6'}]},options:{...chartOpts,scales:{...chartOpts.scales,y:{...chartOpts.scales.y,min:0,max:100}}}});
+new Chart(document.getElementById('timeChart').getContext('2d'),{type:'doughnut',data:{labels:['Work','Personal','Health','Learning','Social'],datasets:[{data:[45,20,15,12,8],backgroundColor:['#3b82f6','#6366f1','#10b981','#f59e0b','#ec4899'],borderWidth:0}]},options:{responsive:true,plugins:{legend:{position:'right',labels:{color:'#7889a8',font:{family:'DM Sans'},boxWidth:12}}}}});
+new Chart(document.getElementById('taskChart').getContext('2d'),{type:'bar',data:{labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],datasets:[{label:'Tasks Done',data:[4,6,3,8,5,2,4],backgroundColor:'rgba(16,185,129,0.6)',borderColor:'#10b981',borderWidth:2,borderRadius:6}]},options:chartOpts});
+async function genReport(){
+  document.getElementById('aiReport').innerHTML='<span style="color:var(--text2)">Generating with Gemini AI...</span>';
+  const r=await fetch('/api/ai/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:`Generate a brief monthly productivity report. Stats: ${{{ task_done }}} tasks done of ${{{ task_total }}}, ${{{ habit_count }}} habits, ${{{ goal_avg|round(1) }}}% avg goal progress, $${{{ income }}} income, $${{{ expense }}} expenses. Max 120 words with 2 action items.`})});
+  const d=await r.json();
+  document.getElementById('aiReport').innerHTML=(d.reply||'Could not generate report.').replace(/\n/g,'<br>');
+}
+</script>
+{% endblock %}
