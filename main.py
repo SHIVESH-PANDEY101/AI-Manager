@@ -27,7 +27,7 @@ load_dotenv()
 SECRET_KEY    = "nexus-super-secret-key-change-in-production-2024"
 ALGORITHM     = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
-
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GEMINI_API_KEY = "AIzaSyBDrWKvtUekr67S_Xx8NQwFW5uyj0PWKSM"
 GEMINI_URL    = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
 GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
